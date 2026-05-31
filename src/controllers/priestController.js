@@ -37,7 +37,7 @@ export const updatePriest = async (req, res) => {
   try {
     await validateUpdatePriestPayload(req);
     
-    const filteredUpdates = pickAllowedFields(editPriestAllowedFields.at, req.body);
+    const filteredUpdates = pickAllowedFields(editPriestAllowedFields, req.body);
     const updatedPriest = await Priest.findOneAndUpdate({ _id: req.params.priest_id }, filteredUpdates, { new: true, runValidators: true });
     res.json({
       status: "success",

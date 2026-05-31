@@ -13,12 +13,12 @@ export const authPriestMiddleware = async (req, res, next) => {
     }
 
     const decodedMessage = await jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decodedMessage);
-    if (!mongoose.Types.ObjectId.isValid(decodedMessage._id)) {
+    
+    if (!mongoose.Types.ObjectId.isValid(decodedMessage.priestId)) {
       throw new Error("Invalid id");
     }
 
-    const priest = await Priest.findOne({ _id: decodedMessage._id });
+    const priest = await Priest.findOne({ _id: decodedMessage.priestId });
     if (!priest) {
       return res.status(404).json({
         status: "failure",
