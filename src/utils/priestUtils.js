@@ -14,6 +14,10 @@ export const validateCreatePriestData = (createPriestPayload) => {
       throw new Error("Invalid email");
     }
 
+    if(createPriestPayload.priest_password.length < 8) {
+      throw new Error("Password length must be atleast 8 characters including numbers and special characters");
+    }
+
     return true;
 }
 
@@ -30,4 +34,13 @@ export const validateUpdatePriestPayload = (req) => {
 
   return true;
 
+}
+
+export const validateReviewBaptismRequestPayload = (reviewBaptismRequestPayload) => {
+  const reviewBaptismRequestAllowedFields = ["status", "priest_response"];
+  checkIsthereInvalidFields(reviewBaptismRequestAllowedFields, reviewBaptismRequestPayload);
+
+  checkAllRequiredFieldsPresent(["status"], reviewBaptismRequestPayload);
+
+  return true;
 }

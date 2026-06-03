@@ -6,6 +6,8 @@ import priestRouter from "./routes/priestRoutes.js";
 import priestAuthRouter from "./routes/auth_routes/priestAuthRoutes.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import userAuthRouter from "./routes/auth_routes/userAuthRoutes.js";
+import baptismRequestRouter from "./routes/baptismRequestRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -25,6 +27,9 @@ app.use("/api/auth/priest", priestAuthRouter);
 app.use("/api/priest", priestRouter);
 app.use("/api/priest_availability", priestAvailabilityRouter);
 
+app.use("/api/auth/user", userAuthRouter);
+
+app.use("/api/user/baptism_request", baptismRequestRouter);
 
 
 const port = process.env.PORT;
