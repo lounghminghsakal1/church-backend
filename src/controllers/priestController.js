@@ -55,7 +55,7 @@ export const updatePriest = async (req, res) => {
 
 export const getAllPendingBaptismRquests = async (req, res) => {
   try {
-    const allPendingBaptismRequests = await BaptismRequest.find({ status: "pending" });
+    const allPendingBaptismRequests = await BaptismRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number", "prayer_group"]);
     res.json({
       status: "success",
       message: "All pending baptism requests have been fetched succeessfully",
