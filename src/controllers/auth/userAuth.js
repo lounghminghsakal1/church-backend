@@ -3,7 +3,7 @@ import { pickAllowedFields } from "../../utils/generalHelpers.js";
 import { createUserAllowedFields } from "../../constants/userConstants.js";
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { decode } from "jsonwebtoken";
 
 export const createUser = async (req, res) => {
   try {
@@ -59,7 +59,7 @@ export const userLogin = async (req, res) => {
 
 export const getLoggedInUser = async (req, res) => {
   try {
-    const userToken = req.cookies.token;
+    const userToken = req.cookies.userToken;
     if (!userToken) {
       return res.status(404).json({
         status: "failure",
