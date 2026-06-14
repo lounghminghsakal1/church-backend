@@ -12,6 +12,6 @@ confessionRouter.get("/", authUserMiddleWare, getAllConfesstionRequests);
 
 confessionRouter.patch("/:confession_request_id", authUserMiddleWare, getOneConfessionRequest);
 
-confessionRouter.patch("/:confession_request_id", authUserMiddleWare, cancelConfessionRequest);
+confessionRouter.post("/:confession_request_id/cancel", authUserMiddleWare, cancelConfessionRequest);
 
 export default confessionRouter;

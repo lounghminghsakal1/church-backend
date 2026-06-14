@@ -12,6 +12,6 @@ eucharistRouter.get("/:eucharist_request_id", authUserMiddleWare, getOneEucharis
 
 eucharistRouter.get("/", authUserMiddleWare, getAllEucharistRequests);
 
-eucharistRouter.patch("/:eucharist_request_id", authUserMiddleWare, cancelEucharistRequest);
+eucharistRouter.post("/:eucharist_request_id/cancel", authUserMiddleWare, cancelEucharistRequest);
 
 export default eucharistRouter;
