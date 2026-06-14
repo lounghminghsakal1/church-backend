@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export const checkAllRequiredFieldsPresent = (requiredFields, payload) => {
   const missingFields = requiredFields.filter(field => payload[field] === undefined || payload[field] === null || payload[field] === "");
   if(missingFields.length > 0) {
@@ -22,4 +24,31 @@ export const pickAllowedFields = (allowedFields, payload) => {
     }
   })
   return filtered;
+}
+
+export const validateIdAndGiveThatDocument = async (id, model) => {
+  if(!id || !model) return;
+  if(!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid id");
+  }
+  const document = await model.findById(id);
+  if(!document) {
+    throw new Error("Request not found");
+  }
+  return document;
+}
+
+export const successResponse = (message, data) => {
+  return {
+    status: "success",
+    message: message,
+    data: data
+  };
+}
+
+export const failureResponse = (message) => {
+  return {
+    status: "failure",
+    message: message
+  }
 }

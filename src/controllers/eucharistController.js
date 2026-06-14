@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { createEucharistRequiredAndAllowedFields } from "../constants/eucharistRequestConstants.js";
+import { createAndEditEucharistRequiredAndAllowedFields } from "../constants/eucharistRequestConstants.js";
 import EucharistRequest from "../models/EucharistRequest.js";
 import User from "../models/User.js";
 import { pickAllowedFields } from "../utils/generalHelpers.js";
@@ -14,7 +14,7 @@ export const createEucharistRequest = async (req, res,) => {
         message: "You have not uploaded family card document, Please upload the document"
       });
     }
-    const filteredPayload = pickAllowedFields(createEucharistRequiredAndAllowedFields, req.body);
+    const filteredPayload = pickAllowedFields(createAndEditEucharistRequiredAndAllowedFields, req.body);
     filteredPayload.user = req.user._id;
     const eucharistRequest = await EucharistRequest.create(filteredPayload);
     res.status(201).json({
@@ -60,7 +60,7 @@ export const updateEucharistRequest = async (req, res) => {
       });
     }
     validateUpdateEucharistPayload(req.body);
-    const filteredPayload = pickAllowedFields(createEucharistRequiredAndAllowedFields, req.body);
+    const filteredPayload = pickAllowedFields(createAndEditEucharistRequiredAndAllowedFields, req.body);
     const updatedEucharistRequest = await EucharistRequest.findByIdAndUpdate(eucharistRequestId, filteredPayload, { new: true });
 
     res.json({

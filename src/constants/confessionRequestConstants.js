@@ -1,0 +1,1 @@
+export const createAndEditConfessionRequestAllowedAndRequiredFields = ["confession_person_name", "preferred_confession_date_and_time"];

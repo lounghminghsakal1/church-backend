@@ -11,6 +11,7 @@ import baptismRequestRouter from "./routes/baptismRequestRoutes.js";
 import path from "path";
 import uploadFamilyCardRouter from "./routes/uploadFamilyCardRoutes.js";
 import eucharistRouter from "./routes/eucharistRoutes.js";
+import confessionRouter from "./routes/confessionRequestRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -38,7 +39,9 @@ app.use("/api/uploads", express.static(path.join(process.cwd(), "/uploads")));
 
 app.use("/api/uploads/family_card" , uploadFamilyCardRouter);
 
-app.use("/api/user/eucharist_request",eucharistRouter);
+app.use("/api/user/eucharist_request", eucharistRouter);
+
+app.use("/api/user/confession_request", confessionRouter);
 
 const port = process.env.PORT;
 

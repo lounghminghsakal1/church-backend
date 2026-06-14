@@ -53,3 +53,11 @@ export const validateReviewEucharistRequestPayload = (reviewEucharistRequestPayl
   return true;
 }
 
+export const validateReviewConfessionRequest = (reviewConfessionRequestPayload) => {
+  const reviewConfessionRequestAllowedFields = ["status", "priest_response"];
+  checkIsthereInvalidFields(reviewConfessionRequestAllowedFields, reviewConfessionRequestPayload);
+
+  checkAllRequiredFieldsPresent(["status"], reviewConfessionRequestPayload);
+  return true;
+}
+

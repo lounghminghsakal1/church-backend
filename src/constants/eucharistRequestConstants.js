@@ -1,1 +1,1 @@
-export const createEucharistRequiredAndAllowedFields = ["father_name", "mother_name", "eucharist_person_name", "preferred_eucharist_date_and_time"];
+export const createAndEditEucharistRequiredAndAllowedFields = ["father_name", "mother_name", "eucharist_person_name", "preferred_eucharist_date_and_time"];

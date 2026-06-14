@@ -3,9 +3,10 @@ import { editPriestAllowedFields } from "../constants/priestConstants.js";
 import BaptismRequest from "../models/BaptismRequest.js";
 import EucharistRequest from "../models/EucharistRequest.js";
 import Priest from "../models/Priest.js";
-import { pickAllowedFields } from "../utils/generalHelpers.js";
-import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBaptismRequestPayload, validateReviewEucharistRequestPayload } from "../utils/priestUtils.js";
+import { failureResponse, pickAllowedFields, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers.js";
+import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBaptismRequestPayload, validateReviewEucharistRequestPayload, validateReviewConfessionRequest } from "../utils/priestUtils.js";
 import bcrypt from "bcrypt";
+import ConfessionRequest from "../models/ConfessionRequest.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -162,3 +163,30 @@ export const reviewEucharistRequest = async (req, res) => {
   }
 }
 
+
+export const getAllPendingConfessionRquests = async (req, res) => {
+  try {
+    const allPendinConfessionRequests = await ConfessionRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number"]);
+    res.json(successResponse("All pending confession requests are fetched successfully", allPendinConfessionRequests));
+  } catch(err) {
+    res.json(failureResponse("Falied to fetch all pending confession requests, "+err.message));
+  }
+}
+
+export const reviewConfessionRequest = async (req, res) => {
+  try {
+    const confessionRequestId = req.params.confession_request_id;
+    if(!confessionRequestId) throw new Error("Confesstion request id required");
+    const confessionRequest = await validateIdAndGiveThatDocument(confessionRequestId, ConfessionRequest);
+    validateReviewConfessionRequest(req.body);
+    if(req.body.status !== "approved" && req.body.status !== "rejected") {
+      throw new Error("Invalid status");
+    }
+    const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedConfessionRequest = await ConfessionRequest.findByIdAndUpdate(confessionRequestId, filteredPayload, {new:true});
+    res.json(successResponse(`Confession request ${req.body.status} successfully`, reviewedConfessionRequest))
+  } catch(err) {
+    res.status(400).json(failureResponse(`Failed to review confession request, ${err.message}`));
+  }
+}
+ 
