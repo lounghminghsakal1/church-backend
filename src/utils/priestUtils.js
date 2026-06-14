@@ -44,3 +44,12 @@ export const validateReviewBaptismRequestPayload = (reviewBaptismRequestPayload)
 
   return true;
 }
+
+export const validateReviewEucharistRequestPayload = (reviewEucharistRequestPayload) => {
+  const reviewEucharistRequestAllowedFields = ["status", "priest_response"];
+  checkIsthereInvalidFields(reviewEucharistRequestAllowedFields, reviewEucharistRequestPayload);
+
+  checkAllRequiredFieldsPresent(["status"], reviewEucharistRequestPayload);
+  return true;
+}
+

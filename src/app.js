@@ -8,6 +8,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import userAuthRouter from "./routes/auth_routes/userAuthRoutes.js";
 import baptismRequestRouter from "./routes/baptismRequestRoutes.js";
+import path from "path";
+import uploadFamilyCardRouter from "./routes/uploadFamilyCardRoutes.js";
+import eucharistRouter from "./routes/eucharistRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -31,6 +34,11 @@ app.use("/api/auth/user", userAuthRouter);
 
 app.use("/api/user/baptism_request", baptismRequestRouter);
 
+app.use("/api/uploads", express.static(path.join(process.cwd(), "/uploads")));
+
+app.use("/api/uploads/family_card" , uploadFamilyCardRouter);
+
+app.use("/api/user/eucharist_request",eucharistRouter);
 
 const port = process.env.PORT;
 

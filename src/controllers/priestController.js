@@ -1,8 +1,10 @@
+import mongoose from "mongoose";
 import { editPriestAllowedFields } from "../constants/priestConstants.js";
 import BaptismRequest from "../models/BaptismRequest.js";
+import EucharistRequest from "../models/EucharistRequest.js";
 import Priest from "../models/Priest.js";
 import { pickAllowedFields } from "../utils/generalHelpers.js";
-import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBaptismRequestPayload } from "../utils/priestUtils.js";
+import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBaptismRequestPayload, validateReviewEucharistRequestPayload } from "../utils/priestUtils.js";
 import bcrypt from "bcrypt";
 
 export const createPriest = async (req, res) => {
@@ -53,6 +55,8 @@ export const updatePriest = async (req, res) => {
   }
 }
 
+// Baptism requests management
+
 export const getAllPendingBaptismRquests = async (req, res) => {
   try {
     const allPendingBaptismRequests = await BaptismRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number", "prayer_group"]);
@@ -73,6 +77,16 @@ export const getAllPendingBaptismRquests = async (req, res) => {
 export const reviewBaptismRequest = async (req, res) => {
   try {
     const baptismRequestId = req.params.baptism_request_id;
+    if(!baptismRequestId) {
+      throw new Error("Baptism request id is required");
+    }
+    if(!mongoose.Types.ObjectId.isValid(baptismRequestId)) {
+      throw new Error("Invalid id");
+    }
+    const baptismRequest = await BaptismRequest.findById(baptismRequestId);
+    if(!baptismRequest) {
+      throw new Error("baptism request not found");
+    }
     validateReviewBaptismRequestPayload(req.body);
     if (req.body.status !== "approved" && req.body.status !== "rejected") {
       return res.status(422).json({
@@ -94,3 +108,57 @@ export const reviewBaptismRequest = async (req, res) => {
     });
   }
 }
+
+
+// Eucharist request Management
+export const getAllPendingEucharistRequests = async (req, res) => {
+  try {
+    const allPendingEucharistRequests = await EucharistRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
+    res.json({
+      status: "success",
+      message: "All pending eucharist requests are fetched successfully",
+      data: allPendingEucharistRequests
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "failure",
+      message: "Failed to fetch all pending eucharist requests"
+    });
+  }
+}
+
+export const reviewEucharistRequest = async (req, res) => {
+  try {
+    const euchartistRequestId = req.params.eucharist_request_id;
+    if (!euchartistRequestId) {
+      throw new Error("Eucharist request id present");
+    }
+    if (!mongoose.Types.ObjectId.isValid(euchartistRequestId)) {
+      throw new Error("Invalid id");
+    }
+    const eucharistRequest = await EucharistRequest.findById(euchartistRequestId);
+    if (!eucharistRequest) {
+      throw new Error("Eucharist request not found");
+    }
+    validateReviewEucharistRequestPayload(req.body);
+    if (req.body.status !== "approved" && req.body.status !== "rejected") {
+      return res.status(422).json({
+        status: "failure",
+        message: "Invalid status"
+      });
+    }
+    const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedEucharistRequest = await EucharistRequest.findByIdAndUpdate(euchartistRequestId, filteredPayload, { new: true });
+    res.json({
+      status: "success",
+      message: `Eucharist request ${req.body.status} successfully`,
+      data: reviewedEucharistRequest
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "failure",
+      message: "Failed to review eucharist request, "+err.message
+    });
+  }
+}
+

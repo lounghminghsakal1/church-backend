@@ -46,10 +46,16 @@ const UserSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  family_card_document_url: {
-    type: String
+  family_card_document: {
+    file_name: String,
+    file_path: String,
+    updated_at: String,
   },
-  is_verified: Boolean
+  verification_status: {
+    type: String,
+    enum: ["pending", "verified", "rejected"],
+    default: "pending"
+  }
 }, {timestamps: true});
 
 export default mongoose.model("User", UserSchema);
