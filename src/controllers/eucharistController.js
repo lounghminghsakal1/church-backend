@@ -140,6 +140,9 @@ export const cancelEucharistRequest = async (req, res) => {
         message: "Eucharist request not found"
       });
     }
+    if(eucharistRequest.status !== "pending") {
+      throw new Error("Only requests with pending status can be cancelled");
+    }
     const cancelledEucharistRequest = await EucharistRequest.findByIdAndUpdate(eucharistRequestId, {status: "cancelled"}, {new:true});
     res.json({
       status: "sucess",

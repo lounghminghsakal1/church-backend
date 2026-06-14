@@ -40,7 +40,7 @@ export const authPriestMiddleware = async (req, res, next) => {
 }
 
 
-export const authUser = async (req, res, next) => {
+export const authUserMiddleWare = async (req, res, next) => {
   try {
     const userToken = req.cookies.userToken;
     if(!userToken) {
