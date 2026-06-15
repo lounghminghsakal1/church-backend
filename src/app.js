@@ -12,12 +12,13 @@ import path from "path";
 import uploadFamilyCardRouter from "./routes/uploadFamilyCardRoutes.js";
 import eucharistRouter from "./routes/eucharistRoutes.js";
 import confessionRouter from "./routes/confessionRequestRoutes.js";
+import meetingRequestRouter from "./routes/meetingRequestRoutes.js";
 
 const app = express();
 dotenv.config();
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "http://localhost:3001",
   credentials: true
 }))
 
@@ -42,6 +43,9 @@ app.use("/api/uploads/family_card" , uploadFamilyCardRouter);
 app.use("/api/user/eucharist_request", eucharistRouter);
 
 app.use("/api/user/confession_request", confessionRouter);
+
+app.use("/api/user/meeting_request", meetingRequestRouter);
+
 
 const port = process.env.PORT;
 

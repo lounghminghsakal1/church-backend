@@ -23,6 +23,6 @@ const PriestSchema = new mongoose.Schema({
     required: true,
     minlength: 8
   }
-});
+}, {timestamps: true});
 
 export default mongoose.model("Priest", PriestSchema);

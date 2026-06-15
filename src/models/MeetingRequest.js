@@ -1,25 +1,30 @@
 import mongoose from "mongoose";
 
-const ConfessionRequestSchema = new mongoose.Schema({
+const MeetingRequestSchema = new mongoose.Schema({
   user: {
     type: mongoose.Types.ObjectId,
-    required: true,
-    ref: "User"
+    ref: "User",
+    required: true
   },
-  confession_person_name: {
+  person_name: {
     type: String,
     required: true,
     trim: true
   },
-  preferred_confession_date_and_time: {
+  preferred_meeting_date_and_time: {
     type: Date,
     required: true,
     validate: {
       validator(value) {
-        return value > new Date()
+        return value > Date.now()
       },
-      message: "Preferred date must be in the future"
+      message: "Preferred date must be in future"
     }
+  },
+  meeting_purpose: {
+    type: String,
+    required: true,
+    trim: true
   },
   status: {
     type: String,
@@ -28,8 +33,7 @@ const ConfessionRequestSchema = new mongoose.Schema({
   },
   priest_response: {
     type: String,
-    trim: true,
-    default: ""
+    trim: true
   },
   reviewed_by: {
     type: mongoose.Types.ObjectId,
@@ -37,4 +41,4 @@ const ConfessionRequestSchema = new mongoose.Schema({
   }
 }, {timestamps: true});
 
-export default mongoose.model("ConfessionRequest", ConfessionRequestSchema);
+export default mongoose.model("MeetingRequest", MeetingRequestSchema);

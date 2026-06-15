@@ -3,10 +3,11 @@ import { editPriestAllowedFields } from "../constants/priestConstants.js";
 import BaptismRequest from "../models/BaptismRequest.js";
 import EucharistRequest from "../models/EucharistRequest.js";
 import Priest from "../models/Priest.js";
-import { failureResponse, pickAllowedFields, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers.js";
+import { checkIsthereInvalidFields, failureResponse, pickAllowedFields, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers.js";
 import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBaptismRequestPayload, validateReviewEucharistRequestPayload, validateReviewConfessionRequest } from "../utils/priestUtils.js";
 import bcrypt from "bcrypt";
 import ConfessionRequest from "../models/ConfessionRequest.js";
+import MeetingRequest from "../models/MeetingRequest.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -78,14 +79,14 @@ export const getAllPendingBaptismRquests = async (req, res) => {
 export const reviewBaptismRequest = async (req, res) => {
   try {
     const baptismRequestId = req.params.baptism_request_id;
-    if(!baptismRequestId) {
+    if (!baptismRequestId) {
       throw new Error("Baptism request id is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(baptismRequestId)) {
+    if (!mongoose.Types.ObjectId.isValid(baptismRequestId)) {
       throw new Error("Invalid id");
     }
     const baptismRequest = await BaptismRequest.findById(baptismRequestId);
-    if(!baptismRequest) {
+    if (!baptismRequest) {
       throw new Error("baptism request not found");
     }
     validateReviewBaptismRequestPayload(req.body);
@@ -158,7 +159,7 @@ export const reviewEucharistRequest = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: "failure",
-      message: "Failed to review eucharist request, "+err.message
+      message: "Failed to review eucharist request, " + err.message
     });
   }
 }
@@ -166,27 +167,51 @@ export const reviewEucharistRequest = async (req, res) => {
 
 export const getAllPendingConfessionRquests = async (req, res) => {
   try {
-    const allPendinConfessionRequests = await ConfessionRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number"]);
+    const allPendinConfessionRequests = await ConfessionRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number"]);
     res.json(successResponse("All pending confession requests are fetched successfully", allPendinConfessionRequests));
-  } catch(err) {
-    res.json(failureResponse("Falied to fetch all pending confession requests, "+err.message));
+  } catch (err) {
+    res.json(failureResponse("Falied to fetch all pending confession requests, " + err.message));
   }
 }
 
 export const reviewConfessionRequest = async (req, res) => {
   try {
     const confessionRequestId = req.params.confession_request_id;
-    if(!confessionRequestId) throw new Error("Confesstion request id required");
+    if (!confessionRequestId) throw new Error("Confesstion request id required");
     const confessionRequest = await validateIdAndGiveThatDocument(confessionRequestId, ConfessionRequest);
     validateReviewConfessionRequest(req.body);
-    if(req.body.status !== "approved" && req.body.status !== "rejected") {
+    if (req.body.status !== "approved" && req.body.status !== "rejected") {
       throw new Error("Invalid status");
     }
     const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
-    const reviewedConfessionRequest = await ConfessionRequest.findByIdAndUpdate(confessionRequestId, filteredPayload, {new:true});
+    const reviewedConfessionRequest = await ConfessionRequest.findByIdAndUpdate(confessionRequestId, filteredPayload, { new: true });
     res.json(successResponse(`Confession request ${req.body.status} successfully`, reviewedConfessionRequest))
-  } catch(err) {
+  } catch (err) {
     res.status(400).json(failureResponse(`Failed to review confession request, ${err.message}`));
   }
 }
- 
+
+export const getAllPendingMeetingRequests = async (req, res) => {
+  try {
+    const allPendingMeetingRequests = await MeetingRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number"]);
+    res.json(successResponse("All pending meeting requests are fetched successfully", allPendingMeetingRequests));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to fetch all pending meeting requests, " + err.message));
+  }
+}
+
+export const reviewMeetingRequest = async (req, res) => {
+  try {
+    const meetingRequestId = req.params.meeting_request_id;
+    if(!meetingRequestId) throw new Error("Meeting request id is required");
+    const meetingRequest = await validateIdAndGiveThatDocument(meetingRequestId, MeetingRequest);
+    if(meetingRequest.status !== "pending") throw new Error("Only meeting request with pending status can be reviewed");
+    checkIsthereInvalidFields(["status", "priest_response"], req.body);
+    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedMeetingRequest = await MeetingRequest.findByIdAndUpdate(meetingRequestId, filteredPayload, {new:true});
+    res.json(successResponse("Meeting request "+req.body.status+ " successfully"));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to review meeting request, "+err.message));
+  }
+}
