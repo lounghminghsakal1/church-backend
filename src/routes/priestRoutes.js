@@ -1,5 +1,5 @@
 import express from "express";
-import { createPriest, updatePriest, getAllPendingBaptismRquests, reviewBaptismRequest, getAllPendingEucharistRequests, reviewEucharistRequest, getAllPendingConfessionRquests, reviewConfessionRequest, getAllPendingMeetingRequests, reviewMeetingRequest } from "../controllers/priestController.js";
+import { createPriest, updatePriest, getAllPendingBaptismRquests, reviewBaptismRequest, getAllPendingEucharistRequests, reviewEucharistRequest, getAllPendingConfessionRquests, reviewConfessionRequest, getAllPendingMeetingRequests, reviewMeetingRequest, getAllPendingConfirmationRequest, reviewConfirmationRequest } from "../controllers/priestController.js";
 import { authPriestMiddleware } from "../middlewares/authMiddlewares.js";
 
 const priestRouter = express.Router();
@@ -26,5 +26,9 @@ priestRouter.post("/confession_requests/:confession_request_id", authPriestMiddl
 priestRouter.get("/meeting_requests", authPriestMiddleware, getAllPendingMeetingRequests);
 
 priestRouter.post("/meeting_requests/:meeting_request_id", authPriestMiddleware, reviewMeetingRequest);
+
+priestRouter.get("/confirmation_requests", authPriestMiddleware, getAllPendingConfirmationRequest);
+
+priestRouter.post("/confirmation_requests/:confirmation_request_id", authPriestMiddleware, reviewConfirmationRequest);
 
 export default priestRouter;

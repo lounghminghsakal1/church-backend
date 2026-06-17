@@ -8,6 +8,7 @@ import { validateCreatePriestData, validateUpdatePriestPayload, validateReviewBa
 import bcrypt from "bcrypt";
 import ConfessionRequest from "../models/ConfessionRequest.js";
 import MeetingRequest from "../models/MeetingRequest.js";
+import ConfirmationRequest from "../models/ConfirmationRequest.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -215,3 +216,30 @@ export const reviewMeetingRequest = async (req, res) => {
     res.status(400).json(failureResponse("Failed to review meeting request, "+err.message));
   }
 }
+
+export const getAllPendingConfirmationRequest = async (req, res) => {
+  try {
+    const allPendingConfirmationRequests = await ConfirmationRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
+    res.json(successResponse("All pending confirmation requests are fetched successfully", allPendingConfirmationRequests));
+  } catch(err) {
+    res.json(failureResponse("Failed to fetch all pending confirmation requests, "+err.message));
+  }
+}
+
+export const reviewConfirmationRequest = async (req, res) => {
+  try {
+    const confirmationRequestId = req.params.confirmation_request_id;
+    if(!confirmationRequestId) throw new Error("Confirmation request id is required");
+    const confirmationRequest = await validateIdAndGiveThatDocument(confirmationRequestId, ConfirmationRequest);
+    if(confirmationRequest.status !== "pending") throw new Error("Only confirmation request with pending status can be reviewed");
+    checkIsthereInvalidFields(["status", "priest_response"], req.body);
+    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedConfirmationRequest = await ConfirmationRequest.findByIdAndUpdate(confirmationRequestId, filteredPayload, {new: true});
+    res.json(successResponse("Confirmation request "+req.body.status+ " successfully", reviewedConfirmationRequest));
+  } catch(err) {
+    res.json(failureResponse("Failed to review confirmation request, "+err.message));
+  }
+}
+
+

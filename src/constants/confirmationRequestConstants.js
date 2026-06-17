@@ -1,0 +1,1 @@
+export const createAndEditConfirmationRequestAllowedAndRequiredFields = ["father_name", "mother_name", "confirmation_person_name"];

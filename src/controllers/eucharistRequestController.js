@@ -8,12 +8,6 @@ import { validateCreateEucharistBody, validateUpdateEucharistPayload } from "../
 export const createEucharistRequest = async (req, res,) => {
   try {
     validateCreateEucharistBody(req.body);
-    if (!req.user.family_card_document) {
-      return res.status(422).json({
-        status: "failure",
-        message: "You have not uploaded family card document, Please upload the document"
-      });
-    }
     const filteredPayload = pickAllowedFields(createAndEditEucharistRequiredAndAllowedFields, req.body);
     filteredPayload.user = req.user._id;
     const eucharistRequest = await EucharistRequest.create(filteredPayload);
