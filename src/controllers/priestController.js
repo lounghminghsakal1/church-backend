@@ -9,6 +9,7 @@ import bcrypt from "bcrypt";
 import ConfessionRequest from "../models/ConfessionRequest.js";
 import MeetingRequest from "../models/MeetingRequest.js";
 import ConfirmationRequest from "../models/ConfirmationRequest.js";
+import MassPrayer from "../models/MassPrayer.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -242,4 +243,27 @@ export const reviewConfirmationRequest = async (req, res) => {
   }
 }
 
+export const getAllPendingMassPrayers = async (req, res) => {
+  try {
+    const allPendingMassPrayers = await MassPrayer.find({status: "pending"});
+    res.json(successResponse("All pending mass prayers are fetched successfully", allPendingMassPrayers));
+  } catch(err) {
+    res.status(400).json(failureResponse("Failed to fetch all pending mass prayers, "+err.message));
+  }
+}
+
+export const reviewMassPrayer = async (req, res) => {
+  try {
+    const massPrayerId = req.params.mass_prayer_id;
+    if(!massPrayerId) throw new Error("Mass prayer id is required");
+    const massPrayer = await validateIdAndGiveThatDocument(massPrayerId, MassPrayer);
+    if(massPrayer.status !== "pending") throw new Error("Only pending mass prayer can be reviewed");
+    if(!req.body.status) throw new Error("Status required");
+    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    const reviewedMassPrayer = await MassPrayer.findByIdAndUpdate(massPrayerId, {status: req.body.status, priest_response: req.body.priest_response ? req.body.priest_response : ""}, {new: true});
+    res.json(successResponse("Mass prayer "+req.body.status+ " successfully"));
+  } catch(err) {
+    res.status(400).json(failureResponse("Failed to review mass prayer, "+err.message));
+  }
+}
 

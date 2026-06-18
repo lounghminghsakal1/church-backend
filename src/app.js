@@ -14,6 +14,7 @@ import eucharistRouter from "./routes/eucharistRoutes.js";
 import confessionRouter from "./routes/confessionRequestRoutes.js";
 import meetingRequestRouter from "./routes/meetingRequestRoutes.js";
 import confirmationRequestRouter from "./routes/confirmationRequestRoutes.js";
+import massPrayerRouter from "./routes/massPrayerRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/api/user/meeting_request", meetingRequestRouter);
 
 app.use("/api/user/confirmation_request", confirmationRequestRouter);
 
+app.use("/api/mass_prayer", massPrayerRouter);
 
 const port = process.env.PORT;
 
