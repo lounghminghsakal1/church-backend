@@ -245,7 +245,7 @@ export const reviewConfirmationRequest = async (req, res) => {
 
 export const getAllPendingMassPrayers = async (req, res) => {
   try {
-    const allPendingMassPrayers = await MassPrayer.find({status: "pending"});
+    const allPendingMassPrayers = await MassPrayer.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number"]).populate("payment", ["payment_mode", "payment_status", "amount", ]);
     res.json(successResponse("All pending mass prayers are fetched successfully", allPendingMassPrayers));
   } catch(err) {
     res.status(400).json(failureResponse("Failed to fetch all pending mass prayers, "+err.message));

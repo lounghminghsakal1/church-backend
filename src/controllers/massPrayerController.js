@@ -1,6 +1,6 @@
 import MassPrayer from "../models/MassPrayer.js";
 import Payment from "../models/Payment.js";
-import { failureResponse, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers";
+import { failureResponse, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers.js";
 import { validateCreateMassPrayerPayload, validateUpdateMassPrayerPayload } from "../utils/massPrayerUtils.js";
 
 export const createMassPrayer = async (req, res) => {
@@ -25,7 +25,7 @@ export const createMassPrayer = async (req, res) => {
       payment: newPayment._id,      
     });
 
-    res.json(successResponse("Mass prayer created successfully"));
+    res.json(successResponse("Mass prayer created successfully", newMassPrayer));
 
   } catch(err) {
     res.status(400).json(failureResponse("Failed to create mass prayer, "+err.message));
@@ -67,7 +67,7 @@ export const getOneMassPrayer = async (req, res) => {
 
 export const getAllMassPrayers = async (req, res) => {
   try {
-    const allMassPrayers = await MassPrayer.find({user: req.user._id});
+    const allMassPrayers = await MassPrayer.find({user: req.user._id}).populate("payment", ["payment_mode", "payment_status", "amount", "payment_for"]);
     res.json(successResponse("All mass prayers fetched successfully", allMassPrayers));
   } catch(err) {
     res.status(400).json(failureResponse("Failed to fetch all mass prayers, "+err.message));

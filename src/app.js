@@ -50,7 +50,7 @@ app.use("/api/user/meeting_request", meetingRequestRouter);
 
 app.use("/api/user/confirmation_request", confirmationRequestRouter);
 
-app.use("/api/mass_prayer", massPrayerRouter);
+app.use("/api/user/mass_prayer", massPrayerRouter);
 
 const port = process.env.PORT;
 
