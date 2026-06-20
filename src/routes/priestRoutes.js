@@ -1,5 +1,5 @@
 import express from "express";
-import { createPriest, updatePriest, getAllPendingBaptismRquests, reviewBaptismRequest, getAllPendingEucharistRequests, reviewEucharistRequest, getAllPendingConfessionRquests, reviewConfessionRequest, getAllPendingMeetingRequests, reviewMeetingRequest, getAllPendingConfirmationRequest, reviewConfirmationRequest, getAllPendingMassPrayers, reviewMassPrayer, getAllPendingMarriageRequests, reviewMarriageRequest } from "../controllers/priestController.js";
+import { createPriest, updatePriest, getAllPendingBaptismRquests, reviewBaptismRequest, getAllPendingEucharistRequests, reviewEucharistRequest, getAllPendingConfessionRquests, reviewConfessionRequest, getAllPendingMeetingRequests, reviewMeetingRequest, getAllPendingConfirmationRequest, reviewConfirmationRequest, getAllPendingMassPrayers, reviewMassPrayer, getAllPendingMarriageRequests, reviewMarriageRequest, getAllPendingAnointingOfTheSickRequests, reviewAnointingOfTheSickRequest } from "../controllers/priestController.js";
 import { authPriestMiddleware } from "../middlewares/authMiddlewares.js";
 
 const priestRouter = express.Router();
@@ -38,6 +38,10 @@ priestRouter.post("/mass_prayers/:mass_prayer_id", authPriestMiddleware, reviewM
 priestRouter.get("/marriage_requests", authPriestMiddleware, getAllPendingMarriageRequests);
 
 priestRouter.post("/marriage_requests/:marriage_request_id", authPriestMiddleware, reviewMarriageRequest);
+
+priestRouter.get("/aos_requests", authPriestMiddleware, getAllPendingAnointingOfTheSickRequests);
+
+priestRouter.post("/aos_requests/:aos_request_id", authPriestMiddleware, reviewAnointingOfTheSickRequest);
 
 
 export default priestRouter;

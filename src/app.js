@@ -16,6 +16,7 @@ import meetingRequestRouter from "./routes/meetingRequestRoutes.js";
 import confirmationRequestRouter from "./routes/confirmationRequestRoutes.js";
 import massPrayerRouter from "./routes/massPrayerRoutes.js";
 import marriageRequestRouter from "./routes/marriageRequestRoutes.js";
+import anoinTingOfTheSickRouter from "./routes/anointingOfTheSickRequestRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -54,6 +55,8 @@ app.use("/api/user/confirmation_request", confirmationRequestRouter);
 app.use("/api/user/marriage_request", marriageRequestRouter);
 
 app.use("/api/user/mass_prayer", massPrayerRouter);
+
+app.use("/api/user/aos_request", anoinTingOfTheSickRouter);
 
 const port = process.env.PORT;
 

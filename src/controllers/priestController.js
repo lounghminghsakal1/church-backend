@@ -11,6 +11,7 @@ import MeetingRequest from "../models/MeetingRequest.js";
 import ConfirmationRequest from "../models/ConfirmationRequest.js";
 import MassPrayer from "../models/MassPrayer.js";
 import MarriageRequest from "../models/MarriageRequest.js";
+import AnointingOfTheSickRequest from "../models/AnointingOfTheSickRequest.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -206,73 +207,73 @@ export const getAllPendingMeetingRequests = async (req, res) => {
 export const reviewMeetingRequest = async (req, res) => {
   try {
     const meetingRequestId = req.params.meeting_request_id;
-    if(!meetingRequestId) throw new Error("Meeting request id is required");
+    if (!meetingRequestId) throw new Error("Meeting request id is required");
     const meetingRequest = await validateIdAndGiveThatDocument(meetingRequestId, MeetingRequest);
-    if(meetingRequest.status !== "pending") throw new Error("Only meeting request with pending status can be reviewed");
+    if (meetingRequest.status !== "pending") throw new Error("Only meeting request with pending status can be reviewed");
     checkIsthereInvalidFields(["status", "priest_response"], req.body);
-    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    if (req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
     const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
-    const reviewedMeetingRequest = await MeetingRequest.findByIdAndUpdate(meetingRequestId, filteredPayload, {new:true});
-    res.json(successResponse("Meeting request "+req.body.status+ " successfully"));
+    const reviewedMeetingRequest = await MeetingRequest.findByIdAndUpdate(meetingRequestId, filteredPayload, { new: true });
+    res.json(successResponse("Meeting request " + req.body.status + " successfully"));
   } catch (err) {
-    res.status(400).json(failureResponse("Failed to review meeting request, "+err.message));
+    res.status(400).json(failureResponse("Failed to review meeting request, " + err.message));
   }
 }
 
 export const getAllPendingConfirmationRequest = async (req, res) => {
   try {
-    const allPendingConfirmationRequests = await ConfirmationRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
+    const allPendingConfirmationRequests = await ConfirmationRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
     res.json(successResponse("All pending confirmation requests are fetched successfully", allPendingConfirmationRequests));
-  } catch(err) {
-    res.json(failureResponse("Failed to fetch all pending confirmation requests, "+err.message));
+  } catch (err) {
+    res.json(failureResponse("Failed to fetch all pending confirmation requests, " + err.message));
   }
 }
 
 export const reviewConfirmationRequest = async (req, res) => {
   try {
     const confirmationRequestId = req.params.confirmation_request_id;
-    if(!confirmationRequestId) throw new Error("Confirmation request id is required");
+    if (!confirmationRequestId) throw new Error("Confirmation request id is required");
     const confirmationRequest = await validateIdAndGiveThatDocument(confirmationRequestId, ConfirmationRequest);
-    if(confirmationRequest.status !== "pending") throw new Error("Only confirmation request with pending status can be reviewed");
+    if (confirmationRequest.status !== "pending") throw new Error("Only confirmation request with pending status can be reviewed");
     checkIsthereInvalidFields(["status", "priest_response"], req.body);
-    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    if (req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
     const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
-    const reviewedConfirmationRequest = await ConfirmationRequest.findByIdAndUpdate(confirmationRequestId, filteredPayload, {new: true});
-    res.json(successResponse("Confirmation request "+req.body.status+ " successfully", reviewedConfirmationRequest));
-  } catch(err) {
-    res.json(failureResponse("Failed to review confirmation request, "+err.message));
+    const reviewedConfirmationRequest = await ConfirmationRequest.findByIdAndUpdate(confirmationRequestId, filteredPayload, { new: true });
+    res.json(successResponse("Confirmation request " + req.body.status + " successfully", reviewedConfirmationRequest));
+  } catch (err) {
+    res.json(failureResponse("Failed to review confirmation request, " + err.message));
   }
 }
 
 export const getAllPendingMassPrayers = async (req, res) => {
   try {
-    const allPendingMassPrayers = await MassPrayer.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number"]).populate("payment", ["payment_mode", "payment_status", "amount", ]);
+    const allPendingMassPrayers = await MassPrayer.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number"]).populate("payment", ["payment_mode", "payment_status", "amount",]);
     res.json(successResponse("All pending mass prayers are fetched successfully", allPendingMassPrayers));
-  } catch(err) {
-    res.status(400).json(failureResponse("Failed to fetch all pending mass prayers, "+err.message));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to fetch all pending mass prayers, " + err.message));
   }
 }
 
 export const reviewMassPrayer = async (req, res) => {
   try {
     const massPrayerId = req.params.mass_prayer_id;
-    if(!massPrayerId) throw new Error("Mass prayer id is required");
+    if (!massPrayerId) throw new Error("Mass prayer id is required");
     const massPrayer = await validateIdAndGiveThatDocument(massPrayerId, MassPrayer);
-    if(massPrayer.status !== "pending") throw new Error("Only pending mass prayer can be reviewed");
-    if(!req.body.status) throw new Error("Status required");
-    if(req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
-    const reviewedMassPrayer = await MassPrayer.findByIdAndUpdate(massPrayerId, {status: req.body.status, priest_response: req.body.priest_response ? req.body.priest_response : ""}, {new: true});
-    res.json(successResponse("Mass prayer "+req.body.status+ " successfully"));
-  } catch(err) {
-    res.status(400).json(failureResponse("Failed to review mass prayer, "+err.message));
+    if (massPrayer.status !== "pending") throw new Error("Only pending mass prayer can be reviewed");
+    if (!req.body.status) throw new Error("Status required");
+    if (req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    const reviewedMassPrayer = await MassPrayer.findByIdAndUpdate(massPrayerId, { status: req.body.status, priest_response: req.body.priest_response ? req.body.priest_response : "" }, { new: true });
+    res.json(successResponse("Mass prayer " + req.body.status + " successfully"));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to review mass prayer, " + err.message));
   }
 }
 
 export const getAllPendingMarriageRequests = async (req, res) => {
   try {
-    const allPendingMarriageRequests = await MarriageRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
+    const allPendingMarriageRequests = await MarriageRequest.find({ status: "pending" }).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
     res.json(successResponse("All pending marriage requests fetched successfully", allPendingMarriageRequests));
-  } catch(err) {
+  } catch (err) {
     res.status(400).json(failureResponse("Failed to fetch all pending marriage requests", +err.message));
   }
 }
@@ -280,17 +281,42 @@ export const getAllPendingMarriageRequests = async (req, res) => {
 export const reviewMarriageRequest = async (req, res) => {
   try {
     const marriageRequestId = req.params.marriage_request_id;
-    if(!marriageRequestId) throw new Error("Marriage request id is required");
+    if (!marriageRequestId) throw new Error("Marriage request id is required");
     const marriageRequest = await validateIdAndGiveThatDocument(marriageRequestId, MarriageRequest);
-    if(marriageRequest.status !== "pending") throw new Error("Only marriage request with pending status can be reviewed");
+    if (marriageRequest.status !== "pending") throw new Error("Only marriage request with pending status can be reviewed");
     checkIsthereInvalidFields(["status", "priest_response"], req.body);
-    if(!req.body.status) throw new Error("Status required in payload");
+    if (!req.body.status) throw new Error("Status required in payload");
     if (req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
     let filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
-    const reviewedMarriageRequest = await MarriageRequest.findByIdAndUpdate(marriageRequestId, filteredPayload, {new: true});
+    const reviewedMarriageRequest = await MarriageRequest.findByIdAndUpdate(marriageRequestId, filteredPayload, { new: true });
     res.json(successResponse(`Marriage request ${req.body.status} successfully`, reviewedMarriageRequest));
-  } catch(err) {
+  } catch (err) {
     res.status(400).json(failureResponse("Failed to review marriage request"));
+  }
+}
+
+export const getAllPendingAnointingOfTheSickRequests = async (req, res) => {
+  try {
+    const allPendingAOSRequests = await AnointingOfTheSickRequest.find({ status: "pending" }).populate("user", ["user_name", "user_mobile_number", "user_email"]);
+    res.json(successResponse("All pending anointing of the sick requests fetched successfully", allPendingAOSRequests));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to fetch all pending anointing of the sick requests"));
+  }
+}
+
+export const reviewAnointingOfTheSickRequest = async (req, res) => {
+  try {
+    const AOSRequestId = req.params.aos_request_id;
+    if (!AOSRequestId) throw new Error("Anointing of the sick request id is required");
+    const AOSRequest = await validateIdAndGiveThatDocument(AOSRequestId, AnointingOfTheSickRequest);
+    if (AOSRequest.status !== "pending") throw new Error("Only status as pending can be reviewed");
+    if(!req.body.status) throw new Error("status is required");
+    checkIsthereInvalidFields(["status", "priest_response"], req.body);
+    const filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedAOSRequest = await AnointingOfTheSickRequest.findByIdAndUpdate(AOSRequestId, filteredPayload, {new: true});
+    res.json(successResponse(`Anointing of the sick request ${req.body.status} successfully`));
+  } catch (err) {
+    res.status(400).json(failureResponse("Failed to review anointing of the sick request"));
   }
 }
 
