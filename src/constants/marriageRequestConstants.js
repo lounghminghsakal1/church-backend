@@ -1,0 +1,1 @@
+export const createAndEditMarriageRequestAllowedAndRequiredFields = ["groom_name", "bride_name", "groom_location", "bride_location", "groom_mobile_number", "bride_mobile_number", "preferred_marriage_date_and_time",];

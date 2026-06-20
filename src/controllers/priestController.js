@@ -10,6 +10,7 @@ import ConfessionRequest from "../models/ConfessionRequest.js";
 import MeetingRequest from "../models/MeetingRequest.js";
 import ConfirmationRequest from "../models/ConfirmationRequest.js";
 import MassPrayer from "../models/MassPrayer.js";
+import MarriageRequest from "../models/MarriageRequest.js";
 
 export const createPriest = async (req, res) => {
   try {
@@ -266,4 +267,32 @@ export const reviewMassPrayer = async (req, res) => {
     res.status(400).json(failureResponse("Failed to review mass prayer, "+err.message));
   }
 }
+
+export const getAllPendingMarriageRequests = async (req, res) => {
+  try {
+    const allPendingMarriageRequests = await MarriageRequest.find({status: "pending"}).populate("user", ["user_name", "user_email", "user_mobile_number", "family_card_document"]);
+    res.json(successResponse("All pending marriage requests fetched successfully", allPendingMarriageRequests));
+  } catch(err) {
+    res.status(400).json(failureResponse("Failed to fetch all pending marriage requests", +err.message));
+  }
+}
+
+export const reviewMarriageRequest = async (req, res) => {
+  try {
+    const marriageRequestId = req.params.marriage_request_id;
+    if(!marriageRequestId) throw new Error("Marriage request id is required");
+    const marriageRequest = await validateIdAndGiveThatDocument(marriageRequestId, MarriageRequest);
+    if(marriageRequest.status !== "pending") throw new Error("Only marriage request with pending status can be reviewed");
+    checkIsthereInvalidFields(["status", "priest_response"], req.body);
+    if(!req.body.status) throw new Error("Status required in payload");
+    if (req.body.status !== "approved" && req.body.status !== "rejected") throw new Error("Invalid status");
+    let filteredPayload = pickAllowedFields(["status", "priest_response"], req.body);
+    const reviewedMarriageRequest = await MarriageRequest.findByIdAndUpdate(marriageRequestId, filteredPayload, {new: true});
+    res.json(successResponse(`Marriage request ${req.body.status} successfully`, reviewedMarriageRequest));
+  } catch(err) {
+    res.status(400).json(failureResponse("Failed to review marriage request"));
+  }
+}
+
+
 
