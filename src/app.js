@@ -22,7 +22,7 @@ const app = express();
 dotenv.config();
 
 app.use(cors({
-  origin: "https://church-frontend-ten-lac.vercel.app/",
+  origin: "https://church-frontend-ten-lac.vercel.app",
   credentials: true
 }))
 
