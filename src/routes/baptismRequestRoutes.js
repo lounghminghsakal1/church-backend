@@ -4,7 +4,7 @@ import { authUserMiddleWare } from "../middlewares/authMiddlewares.js";
 
 const baptismRequestRouter = express.Router();
 
-baptismRequestRouter.post("", authUserMiddleWare, createBaptismRequest);
+baptismRequestRouter.post("", authUserMiddleWare, createBaptismRequest);  
 
 baptismRequestRouter.get("/:baptism_request_id", authUserMiddleWare, getOneBaptismRequest);
 
