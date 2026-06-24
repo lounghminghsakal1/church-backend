@@ -1,2 +1,4 @@
 export const createUserAllowedFields = ["user_name", "user_email", "user_mobile_number", "user_password", "prayer_group", "church_organizations", "spouse_name" ,"address", "family_card_number", "family_card_document_url" ,"is_verified"];
 export const createUserRequiredFields = ["user_name", "user_email", "user_mobile_number", "user_password", "prayer_group"];
+
+export const updateUserAllowedFields = ["user_name", "user_mobile_number", "prayer_group" ,"church_organizations", "spouse_name", "address",];

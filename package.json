@@ -4,8 +4,8 @@
   "main": "src/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/app",
-    "start": "node src/app"
+    "dev": "cross-env NODE_ENV=development nodemon src/app",
+    "start": "cross-env NODE_ENV=production node src/app"
   },
   "type": "module",
   "keywords": [],
@@ -16,6 +16,7 @@
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
