@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    minlength: 8
+    minlength: 6
   },
   prayer_group: {
     type: String,

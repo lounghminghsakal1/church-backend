@@ -11,7 +11,7 @@ confirmationRequestRouter.patch("/:confirmation_request_id", authUserMiddleWare,
 
 confirmationRequestRouter.get("/:confirmation_request_id", authUserMiddleWare, validateFamilyCardMiddleware, getOneConfirmationRequest);
 
-confirmationRequestRouter.get("/", authUserMiddleWare, validateFamilyCardMiddleware, getAllConfirmationRequests);
+confirmationRequestRouter.get("/", authUserMiddleWare, getAllConfirmationRequests);
 
 confirmationRequestRouter.post("/:confirmation_request_id/cancel", authUserMiddleWare, validateFamilyCardMiddleware, cancelConfirmationRequest);
 
