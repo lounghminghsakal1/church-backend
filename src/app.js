@@ -17,12 +17,14 @@ import confirmationRequestRouter from "./routes/confirmationRequestRoutes.js";
 import massPrayerRouter from "./routes/massPrayerRoutes.js";
 import marriageRequestRouter from "./routes/marriageRequestRoutes.js";
 import anoinTingOfTheSickRouter from "./routes/anointingOfTheSickRequestRoutes.js";
+import userRouter from "./routes/userRouter.js";
 
 const app = express();
-dotenv.config();
+const envFile = process.env.NODE_ENV === "development" ? ".env.local" : ".env";
+dotenv.config({path: envFile});
 
 app.use(cors({
-  origin: "https://church-frontend-ten-lac.vercel.app",
+  origin: process.env.FRONTEND_DOMAIN,
   credentials: true
 }))
 
@@ -34,6 +36,7 @@ await connectDB();
 app.use("/api/auth/priest", priestAuthRouter);
 
 app.use("/api/priest", priestRouter);
+
 app.use("/api/priest_availability", priestAvailabilityRouter);
 
 app.use("/api/auth/user", userAuthRouter);
@@ -57,6 +60,8 @@ app.use("/api/user/marriage_request", marriageRequestRouter);
 app.use("/api/user/mass_prayer", massPrayerRouter);
 
 app.use("/api/user/aos_request", anoinTingOfTheSickRouter);
+
+app.use("/api/user", userRouter);
 
 const port = process.env.PORT;
 
