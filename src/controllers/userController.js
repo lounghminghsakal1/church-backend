@@ -1,7 +1,7 @@
 import { updateUserAllowedFields } from "../constants/userConstants.js";
 import User from "../models/User.js";
 import { failureResponse, pickAllowedFields, successResponse, validateIdAndGiveThatDocument } from "../utils/generalHelpers.js";
-import { validateUpdateUserPayload } from "../utils/userutils.js";
+import { validateUpdateUserPayload } from "../utils/userUtils.js";
 
 export const getUser = async (req, res) => {
   try { 
