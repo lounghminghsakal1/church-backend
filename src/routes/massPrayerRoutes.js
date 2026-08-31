@@ -7,6 +7,7 @@ const massPrayerRouter = express.Router();
 
 const massPrayerImageUploader = createFileUploader("mass_prayer_images");
 
+////"mass_prayer_image" that is the argument inside massPrayerImageUploader.single() function is the key name which frontend has to use to send the image or file to backend
 massPrayerRouter.post("/", authUserMiddleWare, massPrayerImageUploader.single("mass_prayer_image"), createMassPrayer);
 
 massPrayerRouter.patch("/:mass_prayer_id", authUserMiddleWare, massPrayerImageUploader.single("mass_prayer_image") ,updateMassPrayer);
