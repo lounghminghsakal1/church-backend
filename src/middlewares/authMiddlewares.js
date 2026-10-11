@@ -46,7 +46,7 @@ export const authUserMiddleWare = async (req, res, next) => {
     if(!userToken) {
       return res.status(404).json({
         status: "failure",
-        message: "Auth user failed, token not found"
+        message: "Auth user failed, token not found, please login"
       });
     }
     
@@ -63,6 +63,9 @@ export const authUserMiddleWare = async (req, res, next) => {
     next();
 
   } catch(err) {
-
+    return res.status(401).json({
+      status: "failure",
+      message: "Invalid or expired user session, please login"
+    });
   }
 }
