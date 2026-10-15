@@ -18,6 +18,8 @@ import massPrayerRouter from "./routes/massPrayerRoutes.js";
 import marriageRequestRouter from "./routes/marriageRequestRoutes.js";
 import anoinTingOfTheSickRouter from "./routes/anointingOfTheSickRequestRoutes.js";
 import userRouter from "./routes/userRouter.js";
+import { priestAnnouncementRouter, userAnnouncementRouter } from "./routes/announcementRoutes.js";
+import s3MediaRouter from "./routes/s3MediaRoutes.js";
 
 const app = express();
 const envFile = process.env.NODE_ENV === "development" ? ".env.local" : ".env";
@@ -35,6 +37,8 @@ await connectDB();
 
 app.use("/api/auth/priest", priestAuthRouter);
 
+app.use("/api/priest/announcements", priestAnnouncementRouter);
+
 app.use("/api/priest", priestRouter);
 
 app.use("/api/priest_availability", priestAvailabilityRouter);
@@ -42,6 +46,8 @@ app.use("/api/priest_availability", priestAvailabilityRouter);
 app.use("/api/auth/user", userAuthRouter);
 
 app.use("/api/user/baptism_request", baptismRequestRouter);
+
+app.use("/api/uploads/s3", s3MediaRouter);
 
 app.use("/api/uploads", express.static(path.join(process.cwd(), "/uploads")));
 
@@ -60,6 +66,8 @@ app.use("/api/user/marriage_request", marriageRequestRouter);
 app.use("/api/user/mass_prayer", massPrayerRouter);
 
 app.use("/api/user/aos_request", anoinTingOfTheSickRouter);
+
+app.use("/api/user/announcements", userAnnouncementRouter);
 
 app.use("/api/user", userRouter);
 

@@ -68,7 +68,7 @@ export const getLoggedInUser = async (req, res) => {
     if (!userToken) {
       return res.status(404).json({
         status: "failure",
-        message: "User token not found",
+        message: "User token not found, please login",
       });
     }
     const decodedMessage = await jwt.verify(userToken, process.env.JWT_SECRET);
