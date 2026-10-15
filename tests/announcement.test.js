@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import express from "express";
+import cookieParser from "cookie-parser";
+import { priestAnnouncementRouter, userAnnouncementRouter } from "../src/routes/announcementRoutes.js";
 import Announcement from "../src/models/Announcement.js";
 import { validateAnnouncementPayload, visibleAnnouncementFilter } from "../src/utils/announcementUtils.js";
 import {
@@ -176,5 +179,46 @@ test("role-specific authentication rejects missing and wrong-role cookies withou
     await middleware({ cookies }, res, () => assert.fail("Must not authorize request"));
     assert.ok(res.statusCode >= 400);
     assert.equal(res.body.status, "failure");
+  }
+});
+
+test("announcement reads are public while every priest operation still requires login", async (t) => {
+  const visible = { _id: announcementId.toString(), title: "Public announcement" };
+  const checkVisibility = filter => {
+    assert.equal(filter.status, "active");
+    assert.ok(filter.start_date.$lte instanceof Date);
+    assert.equal(filter.start_date.$lte, filter.end_date.$gte);
+  };
+  t.mock.method(Announcement, "find", filter => {
+    checkVisibility(filter);
+    return { sort: async () => [visible] };
+  });
+  t.mock.method(Announcement, "findOne", async filter => {
+    checkVisibility(filter);
+    return filter._id === announcementId.toString() ? visible : null;
+  });
+  const app = express();
+  app.use(cookieParser());
+  app.use(express.json());
+  app.use("/api/user/announcements", userAnnouncementRouter);
+  app.use("/api/priest/announcements", priestAnnouncementRouter);
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(resolve => server.once("listening", resolve));
+  t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  for (const headers of [{}, { Cookie: "userToken=expired; token=invalid" }]) {
+    const list = await fetch(`${origin}/api/user/announcements`, { headers });
+    assert.equal(list.status, 200);
+    assert.deepEqual((await list.json()).data, [visible]);
+    const detail = await fetch(`${origin}/api/user/announcements/${announcementId}`, { headers });
+    assert.equal(detail.status, 200);
+    assert.deepEqual((await detail.json()).data, visible);
+  }
+  const missing = await fetch(`${origin}/api/user/announcements/${new mongoose.Types.ObjectId()}`);
+  assert.equal(missing.status, 404);
+  for (const [method, suffix] of [["GET", ""], ["POST", ""], ["GET", `/${announcementId}`],
+    ["PATCH", `/${announcementId}`], ["DELETE", `/${announcementId}`]]) {
+    const res = await fetch(`${origin}/api/priest/announcements${suffix}`, { method });
+    assert.equal(res.status, 401);
   }
 });

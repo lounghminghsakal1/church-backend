@@ -48,7 +48,7 @@ There are two main application roles: user and priest. Priest records additional
 | Payments | Payment model and Mass prayer payment records only; no payment gateway or standalone payment API |
 | Upcoming activities | Empty `UpcomingActivities.js` placeholder; no working API |
 | Parishioner verification | `verification_status` field exists, but no priest verification workflow is implemented |
-| Announcements | Priests manage their own announcements; signed-in users see active announcements within their start/end window |
+| Announcements | Priests manage their own announcements; public visitors see active announcements within their start/end window without login |
 
 Mass prayer requests are an additional parish service, not a seventh sacrament module.
 
@@ -416,8 +416,8 @@ Dates must be ISO 8601 timestamps with an explicit timezone. The end date must b
 | GET | `/api/priest/announcements/:announcement_id` | Priest: view own announcement |
 | PATCH | `/api/priest/announcements/:announcement_id` | Priest: edit any allowed fields, deactivate, or reactivate own announcement |
 | DELETE | `/api/priest/announcements/:announcement_id` | Priest: permanently delete own announcement |
-| GET | `/api/user/announcements` | Signed-in user: list currently visible announcements |
-| GET | `/api/user/announcements/:announcement_id` | Signed-in user: view currently visible announcement details |
+| GET | `/api/user/announcements` | Public: list currently visible announcements without login |
+| GET | `/api/user/announcements/:announcement_id` | Public: view currently visible announcement details without login |
 
 Create example (JSON body):
 

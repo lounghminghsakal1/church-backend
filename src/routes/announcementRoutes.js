@@ -1,5 +1,5 @@
 import express from "express";
-import { authPriestMiddleware, authUserMiddleWare } from "../middlewares/authMiddlewares.js";
+import { authPriestMiddleware } from "../middlewares/authMiddlewares.js";
 import {
   createAnnouncement, getPriestAnnouncements, getPriestAnnouncement,
   updateAnnouncement, deleteAnnouncement, getVisibleAnnouncements, getVisibleAnnouncement,
@@ -14,6 +14,5 @@ priestAnnouncementRouter.patch("/:announcement_id", updateAnnouncement);
 priestAnnouncementRouter.delete("/:announcement_id", deleteAnnouncement);
 
 export const userAnnouncementRouter = express.Router();
-userAnnouncementRouter.use(authUserMiddleWare);
 userAnnouncementRouter.get("/", getVisibleAnnouncements);
 userAnnouncementRouter.get("/:announcement_id", getVisibleAnnouncement);

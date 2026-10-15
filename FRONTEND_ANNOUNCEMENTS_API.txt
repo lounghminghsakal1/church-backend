@@ -1,0 +1,556 @@
+ST. ANTONY'S CHURCH, ILLUPPUR
+ANNOUNCEMENTS AND S3 MEDIA - FRONTEND INTEGRATION GUIDE
+Verified against backend source: 15 October 2026
+Public announcement list/details do not require login.
+
+This file documents implemented behavior. CloudFront/S3 setup is deployment
+configuration; its live configuration has not been verified by this document.
+
+======================================================================
+1. BASE URL AND AUTHENTICATION
+======================================================================
+
+Use the backend server origin as API_ORIGIN, without a trailing /api.
+Example: API_ORIGIN = "http://localhost:5000"
+All endpoint paths below already include /api. Use the configured backend
+port and HTTPS origin for your environment.
+
+Authentication uses HttpOnly cookies, not Authorization: Bearer headers.
+Public announcement GET endpoints need no cookies or session lookup. Render
+their screens for visitors without redirecting to login.
+Include credentials on login and every protected API request:
+  fetch(url, { credentials: "include", ...options })
+Axios equivalent: withCredentials: true.
+Do not read/store the session cookies in JavaScript or localStorage.
+
+Priest login:
+  POST /api/auth/priest
+  Content-Type: application/json
+  { "priest_email": "priest@example.com", "priest_password": "PASSWORD" }
+  Session cookie: token
+
+User login:
+  POST /api/auth/user/login
+  Content-Type: application/json
+  { "user_email": "user@example.com", "user_password": "PASSWORD" }
+  Session cookie: userToken
+
+Existing session lookups:
+  GET /api/auth/priest/me
+  GET /api/auth/user/me
+
+Current login cookies have HttpOnly, Secure, SameSite=None and a one-day
+lifetime. Use HTTPS in deployment. If local requests do not retain cookies,
+check the browser's cookie diagnostics and backend environment settings.
+The backend FRONTEND_DOMAIN must match the frontend origin for CORS.
+CloudFront image URLs are separate from the backend API origin.
+
+======================================================================
+2. ENDPOINT SUMMARY
+======================================================================
+
+Priest session required:
+  POST   /api/priest/announcements                  Create
+  GET    /api/priest/announcements                  List own records
+  GET    /api/priest/announcements/:announcement_id View own record
+  PATCH  /api/priest/announcements/:announcement_id Edit/toggle status
+  DELETE /api/priest/announcements/:announcement_id Permanently delete
+
+Public access (no login required; existing URL paths are unchanged):
+  GET    /api/user/announcements                    List visible records
+  GET    /api/user/announcements/:announcement_id   View visible record
+
+Shared upload (role depends on media_context):
+  POST   /api/uploads/s3                            Upload one asset
+
+There is no separate publish, activate, or deactivate endpoint.
+Use PATCH with status. Announcement APIs accept JSON, not multipart files.
+
+======================================================================
+3. ANNOUNCEMENT FIELDS AND VALIDATION
+======================================================================
+
+Writable field | Create requirement | Rules
+---------------|--------------------|--------------------------------------
+title          | Required           | Non-empty string; trimmed
+description    | Required           | Non-empty string; trimmed
+image_url      | Optional           | HTTP/HTTPS URL or ""; defaults to ""
+link           | Optional           | HTTP/HTTPS URL or ""; defaults to ""
+start_date     | Required           | ISO 8601 timestamp with timezone
+end_date       | Required           | ISO 8601 timestamp with timezone
+status         | Optional           | "active" or "inactive"; default active
+
+End date must be on or after start date. Past dates are permitted: they can
+produce an expired announcement. Future dates schedule its visibility.
+Equal timestamps are allowed, but give a practically instantaneous window.
+
+Accepted timestamp examples:
+  "2026-11-01T08:00:00+05:30"
+  "2026-11-01T02:30:00.000Z"
+
+Not accepted: "2026-11-01" or "2026-11-01T08:00" (no explicit timezone).
+Use timezone-aware conversion. A datetime-local control has no timezone;
+interpret its selected time correctly before converting to an ISO timestamp.
+Display parish times in Asia/Kolkata. Server responses serialize dates as UTC.
+
+To remove image_url or link, send an empty string. Do not send null.
+Do not send a File, base64 string, blob: URL, or temporary local preview URL
+as image_url. First upload the file, then send the returned data.url.
+Announcement images support PNG/JPEG through the S3 upload endpoint.
+There is no announcement attachment/PDF field or multiple-image array.
+
+PATCH accepts only changed fields and must contain at least one field.
+Omitted fields remain unchanged. Date edits are checked against the existing
+other date. Send both dates together when changing the whole window.
+
+Unknown fields are rejected, including _id, created_by, createdAt, updatedAt,
+__v, media_context and media_type. Never resend the whole response object.
+No explicit title/description maximum length is currently configured.
+Treat title/description as plain text; no rich-text/HTML contract is defined.
+
+Read-only response fields:
+  _id        : announcement ID string
+  created_by : creating priest's ID string, not a populated priest object
+  createdAt  : ISO timestamp
+  updatedAt  : ISO timestamp
+  __v        : internal Mongoose version; ignore and never send in payloads
+
+Example announcement object (illustrative IDs and URLs):
+{
+  "_id": "6a0000000000000000000001",
+  "title": "Parish feast celebration",
+  "description": "Join us for Mass and the parish gathering.",
+  "image_url": "https://d123example.cloudfront.net/public/announcements/6a0000000000000000000002/example.jpg",
+  "link": "https://example.com/feast-details",
+  "start_date": "2026-11-01T02:30:00.000Z",
+  "end_date": "2026-11-08T17:30:00.000Z",
+  "status": "active",
+  "created_by": "6a0000000000000000000002",
+  "createdAt": "2026-10-15T05:00:00.000Z",
+  "updatedAt": "2026-10-15T05:00:00.000Z",
+  "__v": 0
+}
+
+======================================================================
+4. PRIEST APIs
+======================================================================
+
+A. CREATE
+POST /api/priest/announcements
+Content-Type: application/json
+
+Example body:
+{
+  "title": "Parish feast celebration",
+  "description": "Join us for Mass and the parish gathering.",
+  "image_url": "https://example.com/feast.jpg",
+  "link": "https://example.com/feast-details",
+  "start_date": "2026-11-01T08:00:00+05:30",
+  "end_date": "2026-11-08T23:00:00+05:30",
+  "status": "active"
+}
+
+Success: HTTP 201
+{
+  "status": "success",
+  "message": "Announcement created successfully",
+  "data": { ...announcement object from section 3... }
+}
+The data placeholder above describes the returned object; it is not literal
+JSON to copy. The backend derives created_by from the authenticated priest.
+Omit image_url/link when unused. Set inactive to save a hidden announcement.
+An active future-dated announcement is scheduled; it is not immediately shown.
+
+B. LIST OWN ANNOUNCEMENTS
+GET /api/priest/announcements
+No request body or supported query filters.
+Returns only the logged-in priest's records, including inactive, upcoming,
+currently visible, and expired records. Sorted by createdAt descending.
+
+Success: HTTP 200
+{
+  "status": "success",
+  "message": "Announcements fetched successfully",
+  "data": []
+}
+data is an array of announcement objects; [] is a successful empty list.
+No pagination, search, count, or server-side status filtering is implemented.
+
+C. VIEW OWN ANNOUNCEMENT
+GET /api/priest/announcements/:announcement_id
+Success: HTTP 200; data is one announcement object.
+Message: "Announcement fetched successfully"
+The priest can view their own record regardless of status/date window.
+Missing records and records owned by another priest return the same 404.
+
+D. EDIT
+PATCH /api/priest/announcements/:announcement_id
+Content-Type: application/json
+
+Example partial body:
+{
+  "title": "Updated parish feast announcement",
+  "end_date": "2026-11-09T23:00:00+05:30"
+}
+
+Success: HTTP 200; data is the updated announcement object.
+Message: "Announcement updated successfully"
+
+Deactivate: { "status": "inactive" }
+Reactivate: { "status": "active" }
+Remove optional content: { "image_url": "", "link": "" }
+Replace image: upload the replacement first, then PATCH its returned URL.
+Reactivation does not change the dates: an expired active record stays hidden.
+
+HTTP 409 means a concurrent database edit conflicted. Reload and show the
+latest record before the priest retries. There is no client version/ETag
+precondition API; this is not full stale-form conflict detection.
+
+E. DELETE
+DELETE /api/priest/announcements/:announcement_id
+No request body.
+Success: HTTP 200
+{
+  "status": "success",
+  "message": "Announcement deleted successfully"
+}
+No data field is returned. Remove the item from UI state or refetch the list.
+Deletion is permanent; there is no restore endpoint. Confirm in the UI.
+Only the creator priest can edit/delete their announcement.
+
+======================================================================
+5. USER APIs AND VISIBILITY
+======================================================================
+
+A. LIST
+GET /api/user/announcements
+Success: HTTP 200
+{
+  "status": "success",
+  "message": "Announcements fetched successfully",
+  "data": []
+}
+data is an array of full announcement objects.
+Sorted by start_date descending, then createdAt descending.
+No pagination, filtering parameters, or search is implemented.
+
+B. DETAILS
+GET /api/user/announcements/:announcement_id
+Success: HTTP 200; data is one announcement object.
+Message: "Announcement fetched successfully"
+
+Both endpoints enforce all three rules at the server's current time:
+  status === "active"
+  start_date <= now
+  end_date >= now
+The date boundaries are inclusive.
+No user or priest session is needed for these two GET endpoints.
+
+Users see eligible announcements from all priests, not only one priest.
+Details return 404 for a missing, inactive, future, or expired record.
+If a list item expires/deactivates before details are opened, show an
+"Announcement is no longer available" state and refresh the list.
+
+There is no push notification/WebSocket subscription or automatic client
+refresh. Fetch on screen entry, refresh after priest mutations, and use a
+manual refresh or suitable polling/focus refresh if needed. Already loaded
+client data is not removed automatically when the server date window ends.
+
+Suggested display labels for the priest UI (derived locally, not API statuses):
+  inactive                      -> Inactive
+  active and now < start_date    -> Scheduled
+  active and start <= now <= end -> Visible
+  active and now > end_date      -> Expired
+Client time labels are advisory; the backend clock controls actual visibility.
+Never send "scheduled", "visible", or "expired" as the stored status.
+
+======================================================================
+6. SHARED S3 MEDIA UPLOAD
+======================================================================
+
+POST /api/uploads/s3
+Content-Type: multipart/form-data (browser must generate the boundary)
+Authenticated session required. Do not send AWS credentials from the frontend.
+
+Multipart fields for an announcement image:
+  file          : exactly one PNG/JPEG File
+  media_context : "announcement"
+  media_type    : "image"
+
+Alternative: keep only file in FormData and pass metadata in the URL:
+  POST /api/uploads/s3?media_context=announcement&media_type=image
+Metadata may be in body or query, but conflicting values are rejected.
+Use exactly these metadata names; the file field is always "file".
+
+Context        | Required role | Allowed media_type | Storage prefix
+---------------|---------------|--------------------|------------------------
+announcement   | Priest        | image              | public/announcements
+priest_profile | Priest        | image              | public/priest_profiles
+user_profile   | User          | image              | public/user_profiles
+mass_prayer    | User          | image              | private/mass_prayers
+family_card    | User          | image, pdf         | private/family_cards
+
+media_type=image accepts image/png and image/jpeg.
+media_type=pdf accepts application/pdf only, and only for family_card.
+WEBP, SVG, GIF, HEIC, videos and multiple files are not supported.
+Maximum file size: 5 * 1024 * 1024 = 5,242,880 bytes (5 MiB).
+The backend checks detected file format against MIME type and media_type.
+An image renamed to .pdf does not become an accepted PDF.
+Use file input accept="image/png,image/jpeg" for announcement images.
+Client validation improves feedback; backend validation remains authoritative.
+
+Success: HTTP 201
+{
+  "status": "success",
+  "message": "Media uploaded to S3 successfully",
+  "data": {
+    "url": "https://d123example.cloudfront.net/public/announcements/6a0000000000000000000002/example.jpg",
+    "key": "public/announcements/6a0000000000000000000002/example.jpg",
+    "media_context": "announcement",
+    "media_type": "image",
+    "content_type": "image/jpeg",
+    "size": 12345
+  }
+}
+Actual keys use the uploader ID and a generated UUID filename.
+Store/use data.url as announcement.image_url. Do not use data.key as an URL.
+Do not include upload metadata or the whole upload response in announcement
+payloads. There is no announcement image_key field.
+
+S3_PUBLIC_BASE_URL, when configured, produces CloudFront URLs for public/*.
+Otherwise the backend returns a direct S3 URL. Use returned URLs unchanged;
+do not hardcode bucket names, concatenate the API origin, or rewrite domains.
+A URL can exist without being publicly readable: S3/CloudFront policies
+must be configured correctly by the backend/infrastructure team.
+
+Private assets return stable S3 URLs that cannot normally be opened
+anonymously. An authorized private-download/presigned-GET API is not yet
+implemented. No presigned upload endpoint is implemented either: the file
+bytes are sent through this backend endpoint.
+
+Upload success does not create or update an announcement or other record.
+If upload succeeds but announcement save fails, retain the returned URL so
+the priest can retry save without uploading the same file again. Avoid
+automatic upload retries that could create duplicate objects.
+
+Replacing/clearing an image or deleting an announcement does not delete its
+S3 object. No media-delete or orphan-cleanup API is currently implemented.
+Public image URLs are not protected by church login; deactivating an
+announcement hides its record, not its previously shared image URL.
+
+======================================================================
+7. COMPLETE FRONTEND JAVASCRIPT EXAMPLE
+======================================================================
+
+// API_ORIGIN is your configured backend origin; do not append /api twice.
+const API_ORIGIN = "https://your-backend.example.com";
+
+async function api(path, options = {}) {
+  const response = await fetch(`${API_ORIGIN}${path}`, {
+    ...options,
+    credentials: "include",
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== "success") {
+    const error = new Error(result.message || "Request failed");
+    error.httpStatus = response.status;
+    throw error;
+  }
+  return result.data;
+}
+
+async function uploadAnnouncementImage(file) {
+  if (!["image/png", "image/jpeg"].includes(file.type)) {
+    throw new Error("Choose a PNG or JPEG image");
+  }
+  if (!file.size || file.size > 5 * 1024 * 1024) {
+    throw new Error("Image must be non-empty and at most 5 MiB");
+  }
+  const form = new FormData();
+  form.append("file", file);
+  form.append("media_context", "announcement");
+  form.append("media_type", "image");
+  // Do not set Content-Type: the browser adds the multipart boundary.
+  return api("/api/uploads/s3", { method: "POST", body: form });
+}
+
+function createAnnouncement(payload) {
+  return api("/api/priest/announcements", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+function editAnnouncement(id, changes) {
+  return api(`/api/priest/announcements/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
+  });
+}
+
+function deleteAnnouncement(id) {
+  return api(`/api/priest/announcements/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  }); // Resolves undefined on successful deletion (no data field).
+}
+
+// Example create flow, called after priest login:
+async function submitAnnouncement(fields, selectedFile) {
+  const uploaded = selectedFile
+    ? await uploadAnnouncementImage(selectedFile)
+    : null;
+  return createAnnouncement({
+    title: fields.title,
+    description: fields.description,
+    image_url: uploaded?.url || "",
+    link: fields.link || "",
+    start_date: fields.start_date, // ISO timestamp with timezone
+    end_date: fields.end_date,
+    status: fields.status || "active",
+  });
+}
+
+// If adding retry support to this example, retain uploaded.url in form state
+// before createAnnouncement. Retrying submitAnnouncement from scratch uploads
+// again. Disable duplicate submissions while upload/save is in progress.
+
+// Priest session required:
+// const own = await api("/api/priest/announcements");
+// await editAnnouncement(id, { status: "inactive" });
+// await editAnnouncement(id, { status: "active" });
+
+// Public reads; credentials are not needed:
+// const result = await fetch(`${API_ORIGIN}/api/user/announcements`, {
+//   credentials: "omit",
+// }).then(response => response.json());
+// const visible = result.data;
+// const details = await api(`/api/user/announcements/${id}`);
+// The api() helper also works for public reads; its cookies are optional.
+
+For an edit form, keep existing image_url unless explicitly replaced/removed.
+Removing only the local preview must not accidentally clear a saved image.
+Show separate upload and save progress/error states. If using object URLs for
+local previews, revoke them when replaced/unmounted; never send them to API.
+Render image_url only when non-empty, with loading/error fallback. For link,
+show an optional external action; use rel="noopener noreferrer" if opening
+a new browser tab. Render title/description as text, not unsanitized HTML.
+
+======================================================================
+8. ERRORS AND CURRENT AUTHENTICATION STATUS QUIRKS
+======================================================================
+
+Standard error body:
+{
+  "status": "failure",
+  "message": "Announcement not found"
+}
+There is no structured field-error array or stable application error-code
+field. Use the HTTP status and display message; avoid routing solely by
+matching exact human-readable message text.
+
+Announcement handler errors:
+  400 : Invalid announcement ID or invalid payload/field/date/status/URL
+  404 : Announcement missing/not owned by priest/not visible to user
+  409 : Concurrent edit conflict; reload latest record before retrying
+  500 : Database or unexpected announcement operation failure
+
+Example validation messages:
+  "title must be a non-empty string"
+  "end_date must be on or after start_date"
+  "start_date must be an ISO 8601 timestamp with a timezone"
+  "status must be active or inactive"
+  "At least one field is required"
+  "Invalid fields: created_by"
+  "Invalid announcement id"
+
+S3 upload errors:
+  400 : Missing file/metadata, unsupported format/context, conflicting
+        body/query metadata, content mismatch or invalid multipart fields
+  401 : No valid user/priest session
+  403 : Valid session but wrong role for the requested context
+  413 : File exceeds 5 MiB
+  502 : S3 upload failed
+  503 : Upload session lookup unavailable or S3 configuration invalid
+
+Example upload messages:
+  "Please login before uploading media"
+  "This media context requires a priest session"
+  "A non-empty file is required in multipart field 'file'"
+  "Unsupported media_context"
+  "media_type is not allowed for this context"
+  "File content does not match its MIME type or media_type"
+  "File must not exceed 5 MiB"
+  "S3 upload is not configured correctly"
+  "Failed to upload media to S3"
+
+The priest announcement authentication middleware has inconsistent statuses:
+  Priest missing cookie       : 401
+  Priest invalid/expired JWT  : 400, message starts "Priest auth failed: "
+  Priest account missing      : 404, message "Priest not found"
+
+A priest endpoint's 404 can therefore be an authentication or record error.
+Maintain priest session state using /api/auth/priest/me when needed.
+Public announcement reads do not run authentication middleware: their 404
+means the record is missing or not visible. Do not require /me for visitors.
+Handle network/non-JSON proxy errors separately from valid API error bodies.
+
+======================================================================
+9. OTHER CHANGES AND COMPATIBILITY
+======================================================================
+
+New shared S3 upload endpoint:
+  POST /api/uploads/s3
+New announcement endpoints: listed in section 2.
+Announcement list/details are public; priest management and uploads remain
+authenticated. Existing /api/user/announcements paths have not been renamed.
+User auth middleware now answers invalid/expired sessions with HTTP 401
+instead of leaving those requests unanswered.
+
+Existing local upload APIs are unchanged:
+  POST /api/uploads/family_card
+    Multipart field: family_card
+  POST/PATCH /api/user/mass_prayer[/:mass_prayer_id]
+    Multipart image field: mass_prayer_image
+    Other existing fields/rules remain as before.
+
+Do not automatically migrate existing family-card or Mass prayer forms to
+S3 URL payloads. Those record endpoints still expect their original file
+uploads. Uploading with family_card/mass_prayer context stores an object only;
+it does not attach it to the relevant user/request record.
+
+priest_profile/user_profile contexts likewise support upload storage, but
+profile image URL fields are not yet implemented in profile APIs/schemas.
+Announcement.image_url already supports the returned upload URL.
+
+Backend-only configuration (never put secrets in the frontend):
+  S3_BUCKET_NAME, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+  optional AWS_SESSION_TOKEN, optional S3_PUBLIC_BASE_URL.
+S3_PUBLIC_BASE_URL is normally the HTTPS CloudFront distribution domain.
+Infrastructure access policies must be configured before public image URLs
+will render. No frontend AWS SDK or direct S3 credentials are needed.
+
+======================================================================
+10. FRONTEND ACCEPTANCE CHECKLIST
+======================================================================
+
+[ ] Priest can create an announcement with no image/link.
+[ ] Priest can upload PNG/JPEG, then create using returned data.url.
+[ ] Reject PDF/WEBP/etc. for announcements and show oversized-file feedback.
+[ ] Priest list includes only own records, with derived visibility labels.
+[ ] Priest can edit text/dates, replace/remove an image, clear a link.
+[ ] Active/inactive toggle uses PATCH and preserves existing dates/content.
+[ ] Delete confirms intent and removes the record from UI state.
+[ ] Public list/details work without login, cookies or a /me lookup.
+[ ] User list shows server-filtered items and has loading/empty/error states.
+[ ] User details handles expiry/deactivation between list and detail fetch.
+[ ] ISO timezone conversion and parish date display are correct.
+[ ] Missing/expired/wrong-role sessions get an appropriate login/error state.
+[ ] Upload failure and announcement-save failure are shown separately.
+[ ] Successful upload URL is retained if announcement save must be retried.
+[ ] A 409 reloads the latest record without silently overwriting form edits.
+[ ] Public CloudFront images render; failed images have fallback UI.
+[ ] Existing local family-card/Mass prayer forms retain their existing flow.
+
+END OF DOCUMENT
