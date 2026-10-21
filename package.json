@@ -6,6 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:announcements": "node --test tests/announcement.test.js",
     "test:s3-media": "node --test tests/s3Media.test.js",
+    "test:availability-reminders": "node --test tests/availabilityReminders.test.js",
     "dev": "cross-env NODE_ENV=development nodemon src/app",
     "start": "cross-env NODE_ENV=production node src/app"
   },
@@ -16,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",
+    "@aws-sdk/client-ses": "^3.1152.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

@@ -42,12 +42,13 @@ export const validateEditPriestAvailabilityPayload = async (req) => {
   const exists = await PriestAvailability.findOne({_id: priestAvailabilityDataId});
   if(!exists) throw new Error("Priest availability data not found with id "+priestAvailabilityDataId);
 
-  if(req.body.available_until && req.body.availability_status !== "available") {
+  const status = req.body.availability_status ?? exists.availability_status;
+  if(req.body.available_until && status !== "available") {
     throw new Error("Available until cannot present while setting status as not available");
   } 
-  if(req.body.next_available && req.body.availability_status !== "not_available") {
+  if(req.body.next_available && status !== "not_available") {
     throw new Error("Next available cannot be present while setting status as available");
   }
-  return true;
+  return exists;
 
 }

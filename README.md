@@ -69,6 +69,8 @@ Models include `priest_response` and `reviewed_by`, but review controllers curre
 
 ## Technology and architecture
 
+Automatic priest availability email reminders: see [setup and delivery behavior](docs/availability-reminders.md).
+
 | Technology | Purpose |
 | --- | --- |
 | Node.js with ES modules | Backend runtime |

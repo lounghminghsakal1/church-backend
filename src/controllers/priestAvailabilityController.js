@@ -3,6 +3,7 @@ import Priest from "../models/Priest.js";
 import PriestAvailability from "../models/PriestAvailability.js"
 import { pickAllowedFields } from "../utils/generalHelpers.js";
 import { validateCreatePriestAvailabilityData, validateEditPriestAvailabilityPayload } from "../utils/priestAvailabilityUtils.js";
+import { prepareAvailabilityUpdate } from "../utils/availabilityReminderUtils.js";
 
 export const getAllPriestAvailability = async (req, res) => {
   try {
@@ -48,14 +49,16 @@ export const getPriestAvailabilityById = async (req, res) => {
 export const createPriestavailability = async (req, res) => {
   try {
     await validateCreatePriestAvailabilityData(req.body);
-    if (req.body.priest !== req.priest._id) {
+    if (String(req.body.priest) !== String(req.priest._id)) {
       return res.status(403).json({
         status: "failure",
         message: "You can't create availability for another one"
       });
     }
 
-    const savedNewPriestAvailabilityData = await PriestAvailability.create(req.body);
+    const savedNewPriestAvailabilityData = await PriestAvailability.create({
+      ...req.body, ...prepareAvailabilityUpdate({}, req.body)
+    });
 
     res.status(201).json({
       status: "success",
@@ -73,11 +76,20 @@ export const createPriestavailability = async (req, res) => {
 
 export const editPriestAvailability = async (req, res) => {
   try {
-    await validateEditPriestAvailabilityPayload(req);
+    const existing = await validateEditPriestAvailabilityPayload(req);
+    if (String(existing.priest) !== String(req.priest._id)) {
+      return res.status(403).json({ status: "failure", message: "You can only edit your own availability" });
+    }
     
     const filteredUpdates = pickAllowedFields(editPriestAvailabilityAllowedFields, req.body);
 
-    const updatedPriestAvailability = await PriestAvailability.findOneAndUpdate({ _id: req.params.priest_availability_id }, filteredUpdates, { new: true, runValidators: true });
+    const updates = prepareAvailabilityUpdate(existing.toObject(), filteredUpdates);
+    const updatedPriestAvailability = await PriestAvailability.findOneAndUpdate({
+      _id: existing._id, priest: req.priest._id, __v: existing.__v
+    }, { $set: updates, $inc: { __v: 1 } }, { new: true, runValidators: true });
+    if (!updatedPriestAvailability) {
+      return res.status(409).json({ status: "failure", message: "Availability changed; reload and try again" });
+    }
     res.json({
       status: "success",
       message: "Priest availability data updated successfully",
