@@ -20,13 +20,18 @@ import anoinTingOfTheSickRouter from "./routes/anointingOfTheSickRequestRoutes.j
 import userRouter from "./routes/userRouter.js";
 import { priestAnnouncementRouter, userAnnouncementRouter } from "./routes/announcementRoutes.js";
 import s3MediaRouter from "./routes/s3MediaRoutes.js";
+import { startAvailabilityReminderWorker } from "./jobs/priestAvailabilityReminders.js";
 
 const app = express();
 const envFile = process.env.NODE_ENV === "development" ? ".env.local" : ".env";
 dotenv.config({path: envFile});
 
 app.use(cors({
-  origin: process.env.FRONTEND_DOMAIN,
+  origin: [
+    process.env.FRONTEND_DOMAIN,
+    "http://localhost:3000",
+    "http://localhost:3001"
+  ],
   credentials: true
 }))
 
@@ -34,6 +39,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 await connectDB();
+startAvailabilityReminderWorker();
 
 app.use("/api/auth/priest", priestAuthRouter);
 
